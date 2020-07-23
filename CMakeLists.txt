@@ -3,17 +3,9 @@ cmake_minimum_required (VERSION 3.17)
 
 project (cpp-clockwork-base32 VERSION 1.0.0)
 
-include (${CMAKE_BINARY_DIR}/conan_paths.cmake)
-
-function (setvar_default_ var_)
-    if (NOT DEFINED ${var_})
-        set (${var_} ${ARGN} PARENT_SCOPE)
-    endif ()
-endfunction ()
-
-set (CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
-set (CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
-set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+if (ENABLE_TESTS)
+    include (${CMAKE_BINARY_DIR}/conan_paths.cmake)
+endif ()
 
 set (t_ clockwork-base32)
     add_library (${t_} INTERFACE)
@@ -21,4 +13,17 @@ set (t_ clockwork-base32)
     target_sources (${t_} INTERFACE include/clockwork-base32.hpp)
     target_compile_features (${t_} INTERFACE cxx_std_17)
 
-add_subdirectory (test)
+if (ENABLE_TESTS)
+    function (setvar_default_ var_)
+        if (NOT DEFINED ${var_})
+            set (${var_} ${ARGN} PARENT_SCOPE)
+        endif ()
+    endfunction ()
+
+    set (CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+    set (CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+    set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+
+    add_subdirectory (test)
+endif ()
+
