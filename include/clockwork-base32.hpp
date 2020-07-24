@@ -174,8 +174,8 @@ namespace ClockworkBase32 {
 
             OutIt_ sink () { return sink_; }
 
-            void operator() (uint8_t ch) {
-                decode (ch);
+            bool operator() (uint8_t ch) {
+                return decode (ch);
             }
 
             /// @brief Decodes the supplied symbol.
