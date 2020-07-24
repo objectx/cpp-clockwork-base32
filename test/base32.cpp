@@ -170,10 +170,10 @@ TEST_CASE ("property") {
         std::string encoded;
         {
             auto                     out = std::back_inserter (encoded);
-            ClockworkBase32::Encoder e;
-            e (v1.begin (), v1.end (), out);
-            e (v2.begin (), v2.end (), out);
-            e.finalize (out);
+            ClockworkBase32::Encoder e { out };
+            e (v1.begin (), v1.end ())
+              (v2.begin (), v2.end ());
+            e.finalize ();
         }
         auto split = *rc::gen::weightedOneOf<size_t>
                 ({{   static_cast<size_t>(18), rc::gen::inRange<size_t> (0, encoded.size ()) }
@@ -184,12 +184,13 @@ TEST_CASE ("property") {
         RC_CLASSIFY(split == 0);
         RC_CLASSIFY(split == encoded.size () - 1);
         std::vector<uint8_t>     decoded;
-        ClockworkBase32::Decoder dec;
 
         auto out = std::back_inserter (decoded);
-        auto r1  = dec (encoded.begin (), encoded.begin () + split, out);
+        ClockworkBase32::Decoder dec { out };
+
+        auto r1  = dec (encoded.begin (), encoded.begin () + split);
         RC_ASSERT (r1 == encoded.begin () + split);
-        auto r2 = dec (encoded.begin () + split, encoded.end (), out);
+        auto r2 = dec (encoded.begin () + split, encoded.end ());
         RC_ASSERT (r2 == encoded.end ());
         RC_ASSERT (std::equal (decoded.begin (), decoded.begin () + v1.size (), v1.begin ()));
         RC_ASSERT (std::equal (decoded.begin () + v1.size (), decoded.end (), v2.begin ()));
