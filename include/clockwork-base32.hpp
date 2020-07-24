@@ -78,74 +78,75 @@ namespace ClockworkBase32 {
     }
 
     /// @brief The Clockwork Base32 encoder.
-    class Encoder {
-        uint8_t bits_      = 0;
-        uint8_t cntBits_   = 0;
-        uint8_t finalized_ = 0;
-    public:
-        Encoder () = default;
+    template <typename OutIt_>
+        class Encoder {
+            OutIt_  sink_;
+            uint8_t bits_      = 0;
+            uint8_t cntBits_   = 0;
+            uint8_t finalized_ = 0;
+        public:
+            explicit Encoder (OutIt_ sink) : sink_ { sink } { /* NO-OP */ }
 
-        [[nodiscard]] bool finalized () const { return finalized_ != 0; }
+            [[nodiscard]] bool finalized () const { return finalized_ != 0; }
 
-        template <typename OutIt_>
-            void operator() (OutIt_ out, uint8_t v) {
-                encode (v, nullptr, out);
+            OutIt_ sink () { return sink_; }
+
+            Encoder &operator() (uint8_t v) {
+                return encode (v);
             }
 
-        /// @brief Encode supplied 1 octet.
-        /// @tparam OutIt_ Type of the output iterator
-        /// @param out The output
-        /// @param v Octet to encode
-        template <typename OutIt_>
-            void encode (OutIt_ out, uint8_t v) {
+            /// @brief Encode supplied 1 octet.
+            /// @param v Octet to encode
+            Encoder &encode (uint8_t v) {
                 assert (cntBits_ < 5u);
                 auto vv = (static_cast<uint16_t> (bits_) << 8u) | static_cast<uint16_t> (v);
                 if (cntBits_ < 2) {
                     auto remain = (cntBits_ + 8u) - 5u;
-                    *out++ = detail::encode (vv >> remain);
+                    *sink_++ = detail::encode (vv >> remain);
                     cntBits_ = remain;
                     bits_    = vv & detail::mask (remain);
                 }
                 else {
                     auto remain = (cntBits_ + 8u) - 10u;
-                    *out++ = detail::encode (vv >> (5u + remain));
-                    *out++ = detail::encode (vv >> remain);
+                    *sink_++ = detail::encode (vv >> (5u + remain));
+                    *sink_++ = detail::encode (vv >> remain);
                     cntBits_ = remain;
                     bits_    = vv & detail::mask (remain);
                 }
+                return *this;
             }
 
-        template <typename OutIt_, typename InIt_>
-            void operator () (InIt_ start, InIt_ end, OutIt_ out) {
-                return encode (start, end, out);
-            }
-
-        /// @brief Encodes sequence.
-        /// @tparam OutIt_ The output iterator type
-        /// @tparam InIt_ The input iterator type
-        /// @param start Start of the sequence
-        /// @param end End of the sequence
-        /// @param out The output
-        template <typename OutIt_, typename InIt_>
-            void encode (InIt_ start, InIt_ end, OutIt_ out) {
-                for (auto it = start; it != end; ++it) {
-                    encode (out, *it);
+            template <typename InIt_>
+                Encoder &operator() (InIt_ start, InIt_ end) {
+                    return encode (start, end);
                 }
-            }
 
-        /// @brief Finalize the output.
-        /// @tparam OutIt_ The output iterator type.
-        /// @param out The output
-        template <typename OutIt_>
-            void finalize (OutIt_ out) {
+            /// @brief Encodes sequence.
+            /// @tparam OutIt_ The output iterator type
+            /// @tparam InIt_ The input iterator type
+            /// @param start Start of the sequence
+            /// @param end End of the sequence
+            /// @param out The output
+            template <typename InIt_>
+                Encoder &encode (InIt_ start, InIt_ end) {
+                    for (auto it = start ; it != end ; ++it) {
+                        encode (*it);
+                    }
+                    return *this;
+                }
+
+            /// @brief Finalize the output.
+            /// @tparam OutIt_ The output iterator type.
+            /// @param out The output
+            void finalize () {
                 if (0 < cntBits_) {
-                    *out++ = detail::encode (bits_ << (5u - cntBits_));
+                    *sink_++ = detail::encode (bits_ << (5u - cntBits_));
                 }
                 cntBits_   = 0u;
                 bits_      = 0u;
                 finalized_ = 1u;
             }
-    };  /* class Encoder */
+        };  /* class Encoder */
 
     /// @brief Encoding entire sequence at once.
     /// @tparam InIt_ The input iterator type
@@ -156,31 +157,31 @@ namespace ClockworkBase32 {
     /// @return Iterator pointed next to the last output.
     template <typename InIt_, typename OutIt_>
         OutIt_ encode (InIt_ start, InIt_ end, OutIt_ out) {
-            Encoder   enc;
-            enc.encode (start, end, out);
-            enc.finalize (out);
+            Encoder enc { out };
+            enc.encode (start, end);
+            enc.finalize ();
             return out;
         }
 
     /// @brief The Clockwork Base32 decoder.
-    class Decoder {
-        uint8_t bits_    = 0;
-        uint8_t cntBits_ = 0;
-    public:
-        Decoder () = default;
+    template <typename OutIt_>
+        class Decoder {
+            OutIt_  sink_;
+            uint8_t bits_    = 0;
+            uint8_t cntBits_ = 0;
+        public:
+            explicit Decoder (OutIt_ sink) : sink_ { sink } { /* NO-OP */ }
 
-        template <typename OutIt_>
-            void operator() (OutIt_ out, uint8_t ch) {
-                decode (out, ch);
+            OutIt_ sink () { return sink_; }
+
+            bool operator() (uint8_t ch) {
+                return decode (ch);
             }
 
-        /// @brief Decodes the supplied symbol.
-        /// @tparam OutIt_ The output iterator type
-        /// @param out The output
-        /// @param ch Input symbol
-        /// @return `true` if the supplied symbol is acceptable.
-        template <typename OutIt_>
-            bool decode (OutIt_ out, uint8_t ch) {
+            /// @brief Decodes the supplied symbol.
+            /// @param ch Input symbol
+            /// @return `true` if the supplied symbol is acceptable.
+            bool decode (uint8_t ch) {
                 auto v = detail::decode (ch);
                 if (!v) {
                     return false;
@@ -192,36 +193,34 @@ namespace ClockworkBase32 {
                     bits_ = static_cast<uint8_t> (vv);
                 }
                 else {
-                    *out++ = static_cast<uint8_t> (vv >> (nBits - 8u));
+                    *sink_++ = static_cast<uint8_t> (vv >> (nBits - 8u));
                     cntBits_ = nBits - 8u;
                     bits_    = static_cast<uint8_t> (vv & detail::mask (cntBits_));
                 }
                 return true;
             }
 
-        template <typename OutIt_, typename InIt_>
-            InIt_ operator () (InIt_ start, InIt_ end, OutIt_ out) {
-                return decode (start, end, out);
-            }
-
-        /// @brief Decodes supplied sequence.
-        /// @tparam OutIt_ The output iterator type
-        /// @tparam InIt_ The input iterator type
-        /// @param start Start of the sequence
-        /// @param end End of the sequence
-        /// @param out The output
-        /// @return When all of inputs are valid, returns `end`.
-        ///         Otherwise return the iterator point a symbol caused error.
-        template <typename OutIt_, typename InIt_>
-            InIt_ decode (InIt_ start, InIt_ end, OutIt_ out) {
-                for (auto it = start; it != end; ++it) {
-                    if (! decode (out, *it)) {
-                        return it;
-                    }
+            template <typename InIt_>
+                InIt_ operator() (InIt_ start, InIt_ end) {
+                    return decode (start, end);
                 }
-                return end;
-            }
-    };  /* class Decoder */
+
+            /// @brief Decodes supplied sequence.
+            /// @tparam InIt_ The input iterator type
+            /// @param start Start of the sequence
+            /// @param end End of the sequence
+            /// @return When all of inputs are valid, returns `end`.
+            ///         Otherwise return the iterator point a symbol caused error.
+            template <typename InIt_>
+                InIt_ decode (InIt_ start, InIt_ end) {
+                    for (auto it = start ; it != end ; ++it) {
+                        if (!decode (*it)) {
+                            return it;
+                        }
+                    }
+                    return end;
+                }
+        };  /* class Decoder */
 
     /// @brief Decodes the input sequence at once.
     /// @tparam InIt_ The input iterator type
@@ -233,7 +232,7 @@ namespace ClockworkBase32 {
     ///         Otherwise return the iterator point a symbol caused error.
     template <typename InIt_, typename OutIt_>
         InIt_ decode (InIt_ start, InIt_ end, OutIt_ out) {
-            Decoder dec;
-            return dec.decode(start, end, out);
+            Decoder dec { out };
+            return dec.decode (start, end);
         }
 }   /* namespace ClockworkBase32 */
