@@ -88,7 +88,7 @@ namespace ClockworkBase32 {
 
         template <typename OutIt_>
             void operator() (OutIt_ out, uint8_t v) {
-                encode (out, v);
+                encode (v, nullptr, out);
             }
 
         template <typename OutIt_>
@@ -110,6 +110,18 @@ namespace ClockworkBase32 {
                 }
             }
 
+        template <typename OutIt_, typename InIt_>
+            void operator () (InIt_ start, InIt_ end, OutIt_ out) {
+                return encode (start, end, out);
+            }
+
+        template <typename OutIt_, typename InIt_>
+            void encode (InIt_ start, InIt_ end, OutIt_ out) {
+                for (auto it = start; it != end; ++it) {
+                    encode (out, *it);
+                }
+            }
+
         template <typename OutIt_>
             void finalize (OutIt_ out) {
                 if (0 < cntBits_) {
@@ -124,9 +136,7 @@ namespace ClockworkBase32 {
     template <typename InIt_, typename OutIt_>
         OutIt_ encode (InIt_ start, InIt_ end, OutIt_ out) {
             Encoder   enc;
-            for (auto it = start ; it != end ; ++it) {
-                enc.encode (out, static_cast<uint8_t> (*it));
-            }
+            enc.encode (start, end, out);
             enc.finalize (out);
             return out;
         }
@@ -161,16 +171,26 @@ namespace ClockworkBase32 {
                 }
                 return true;
             }
+
+        template <typename OutIt_, typename InIt_>
+            InIt_ operator () (InIt_ start, InIt_ end, OutIt_ out) {
+                return decode (start, end, out);
+            }
+
+        template <typename OutIt_, typename InIt_>
+            InIt_ decode (InIt_ start, InIt_ end, OutIt_ out) {
+                for (auto it = start; it != end; ++it) {
+                    if (! decode (out, *it)) {
+                        return it;
+                    }
+                }
+                return end;
+            }
     };
 
     template <typename InIt_, typename OutIt_>
-        std::optional<OutIt_> decode (InIt_ start, InIt_ end, OutIt_ out) {
-            Decoder   dec;
-            for (auto it = start ; it != end ; ++it) {
-                if (!dec.decode (out, static_cast<uint8_t> (*it))) {
-                    return {};
-                }
-            }
-            return { out };
+        InIt_ decode (InIt_ start, InIt_ end, OutIt_ out) {
+            Decoder dec;
+            return dec.decode(start, end, out);
         }
 }
