@@ -167,7 +167,7 @@ TEST_CASE ("property") {
         RC_ASSERT (decoded == v);
     });
     rc::prop ("roundtrip with incremental update", [] (const std::vector<uint8_t> &v1, const std::vector<uint8_t> &v2) {
-        std::string              encoded;
+        std::string encoded;
         {
             auto                     out = std::back_inserter (encoded);
             ClockworkBase32::Encoder e;
@@ -175,7 +175,14 @@ TEST_CASE ("property") {
             e (v2.begin (), v2.end (), out);
             e.finalize (out);
         }
-        auto                     split = *rc::gen::inRange<size_t> (0, encoded.size ()).as ("split");
+        auto split = *rc::gen::weightedOneOf<size_t>
+                ({{   static_cast<size_t>(18), rc::gen::inRange<size_t> (0, encoded.size ()) }
+                  , { static_cast<size_t>(1), rc::gen::just<size_t> (0) }
+                  , { static_cast<size_t>(1), rc::gen::just<size_t> (encoded.empty () ? 0 : encoded.size () - 1) }
+                 });
+
+        RC_CLASSIFY(split == 0);
+        RC_CLASSIFY(split == encoded.size () - 1);
         std::vector<uint8_t>     decoded;
         ClockworkBase32::Decoder dec;
 
