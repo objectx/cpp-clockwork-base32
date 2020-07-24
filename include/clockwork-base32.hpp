@@ -85,6 +85,8 @@ namespace ClockworkBase32 {
             uint8_t cntBits_   = 0;
             uint8_t finalized_ = 0;
         public:
+            ~Encoder () { finalize (); }
+
             explicit Encoder (OutIt_ sink) : sink_ { sink } { /* NO-OP */ }
 
             [[nodiscard]] bool finalized () const { return finalized_ != 0; }
@@ -98,6 +100,7 @@ namespace ClockworkBase32 {
             /// @brief Encode supplied 1 octet.
             /// @param v Octet to encode
             Encoder &encode (uint8_t v) {
+                assert (!finalized ());
                 assert (cntBits_ < 5u);
                 auto vv = (static_cast<uint16_t> (bits_) << 8u) | static_cast<uint16_t> (v);
                 if (cntBits_ < 2) {
@@ -122,11 +125,9 @@ namespace ClockworkBase32 {
                 }
 
             /// @brief Encodes sequence.
-            /// @tparam OutIt_ The output iterator type
             /// @tparam InIt_ The input iterator type
             /// @param start Start of the sequence
             /// @param end End of the sequence
-            /// @param out The output
             template <typename InIt_>
                 Encoder &encode (InIt_ start, InIt_ end) {
                     for (auto it = start ; it != end ; ++it) {
@@ -136,15 +137,15 @@ namespace ClockworkBase32 {
                 }
 
             /// @brief Finalize the output.
-            /// @tparam OutIt_ The output iterator type.
-            /// @param out The output
             void finalize () {
-                if (0 < cntBits_) {
-                    *sink_++ = detail::encode (bits_ << (5u - cntBits_));
+                if (! finalized()) {
+                    if (0 < cntBits_) {
+                        *sink_++ = detail::encode (bits_ << (5u - cntBits_));
+                    }
+                    cntBits_   = 0u;
+                    bits_      = 0u;
+                    finalized_ = 1u;
                 }
-                cntBits_   = 0u;
-                bits_      = 0u;
-                finalized_ = 1u;
             }
         };  /* class Encoder */
 
