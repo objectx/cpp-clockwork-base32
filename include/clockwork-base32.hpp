@@ -77,6 +77,7 @@ namespace ClockworkBase32 {
         }
     }
 
+    /// @brief The Clockwork Base32 encoder.
     class Encoder {
         uint8_t bits_      = 0;
         uint8_t cntBits_   = 0;
@@ -91,6 +92,10 @@ namespace ClockworkBase32 {
                 encode (v, nullptr, out);
             }
 
+        /// @brief Encode supplied 1 octet.
+        /// @tparam OutIt_ Type of the output iterator
+        /// @param out The output
+        /// @param v Octet to encode
         template <typename OutIt_>
             void encode (OutIt_ out, uint8_t v) {
                 assert (cntBits_ < 5u);
@@ -115,6 +120,12 @@ namespace ClockworkBase32 {
                 return encode (start, end, out);
             }
 
+        /// @brief Encodes sequence.
+        /// @tparam OutIt_ The output iterator type
+        /// @tparam InIt_ The input iterator type
+        /// @param start Start of the sequence
+        /// @param end End of the sequence
+        /// @param out The output
         template <typename OutIt_, typename InIt_>
             void encode (InIt_ start, InIt_ end, OutIt_ out) {
                 for (auto it = start; it != end; ++it) {
@@ -122,6 +133,9 @@ namespace ClockworkBase32 {
                 }
             }
 
+        /// @brief Finalize the output.
+        /// @tparam OutIt_ The output iterator type.
+        /// @param out The output
         template <typename OutIt_>
             void finalize (OutIt_ out) {
                 if (0 < cntBits_) {
@@ -131,8 +145,15 @@ namespace ClockworkBase32 {
                 bits_      = 0u;
                 finalized_ = 1u;
             }
-    };
+    };  /* class Encoder */
 
+    /// @brief Encoding entire sequence at once.
+    /// @tparam InIt_ The input iterator type
+    /// @tparam OutIt_ The output iterator type
+    /// @param start Start of the sequence
+    /// @param end End of the sequence
+    /// @param out The output
+    /// @return Iterator pointed next to the last output.
     template <typename InIt_, typename OutIt_>
         OutIt_ encode (InIt_ start, InIt_ end, OutIt_ out) {
             Encoder   enc;
@@ -141,6 +162,7 @@ namespace ClockworkBase32 {
             return out;
         }
 
+    /// @brief The Clockwork Base32 decoder.
     class Decoder {
         uint8_t bits_    = 0;
         uint8_t cntBits_ = 0;
@@ -152,6 +174,11 @@ namespace ClockworkBase32 {
                 decode (out, ch);
             }
 
+        /// @brief Decodes the supplied symbol.
+        /// @tparam OutIt_ The output iterator type
+        /// @param out The output
+        /// @param ch Input symbol
+        /// @return `true` if the supplied symbol is acceptable.
         template <typename OutIt_>
             bool decode (OutIt_ out, uint8_t ch) {
                 auto v = detail::decode (ch);
@@ -177,6 +204,14 @@ namespace ClockworkBase32 {
                 return decode (start, end, out);
             }
 
+        /// @brief Decodes supplied sequence.
+        /// @tparam OutIt_ The output iterator type
+        /// @tparam InIt_ The input iterator type
+        /// @param start Start of the sequence
+        /// @param end End of the sequence
+        /// @param out The output
+        /// @return When all of inputs are valid, returns `end`.
+        ///         Otherwise return the iterator point a symbol caused error.
         template <typename OutIt_, typename InIt_>
             InIt_ decode (InIt_ start, InIt_ end, OutIt_ out) {
                 for (auto it = start; it != end; ++it) {
@@ -186,11 +221,19 @@ namespace ClockworkBase32 {
                 }
                 return end;
             }
-    };
+    };  /* class Decoder */
 
+    /// @brief Decodes the input sequence at once.
+    /// @tparam InIt_ The input iterator type
+    /// @tparam OutIt_ The output iterator type
+    /// @param start Start of the sequence
+    /// @param end End of the sequence
+    /// @param out The output
+    /// @return When all of inputs are valid, returns `end`.
+    ///         Otherwise return the iterator point a symbol caused error.
     template <typename InIt_, typename OutIt_>
         InIt_ decode (InIt_ start, InIt_ end, OutIt_ out) {
             Decoder dec;
             return dec.decode(start, end, out);
         }
-}
+}   /* namespace ClockworkBase32 */
