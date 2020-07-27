@@ -18,6 +18,8 @@ ClockworkBase32::encode (input.begin (), input.end (),
 std::string decoded;
 auto result = ClockworkBase32::decode (encoded.begin (), encoded.end (),
                                        std::back_inserter (decoded));
-
+// `result` points just after the successfully decoded input symbol.
+// If all input symbols are consumed successfully, the result should point to the end of the sequence.
+// Otherwise, the `result` points the symbol caused an error.
 assert (result == encoded.end ());
 ```
