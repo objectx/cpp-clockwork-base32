@@ -19,5 +19,5 @@ std::string decoded;
 auto result = ClockworkBase32::decode (encoded.begin (), encoded.end (),
                                        std::back_inserter (decoded));
 
-assert (result == decoded.end ());
+assert (result == encoded.end ());
 ```
