@@ -24,7 +24,7 @@ namespace rc {
                 else {
                     std::ostringstream ss;
                     printResultMessage (result, ss);
-                    DOCTEST_FAIL (ss.str() << "\n");
+                    DOCTEST_FAIL_CHECK (ss.str() << "\n");
                 }
             }
         }
