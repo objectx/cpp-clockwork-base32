@@ -101,19 +101,19 @@ namespace ClockworkBase32 {
             assert (! finalized ());
             assert (cntBits_ < detail::symbolBits);
 
-            auto constexpr bitsIn = std::numeric_limits<uint8_t>::digits;
+            auto constexpr uint8_digits = std::numeric_limits<uint8_t>::digits;
 
-            uint16_t vv = (static_cast<uint16_t> (bits_) << bitsIn) | static_cast<uint16_t> (v);
+            uint16_t vv = (static_cast<uint16_t> (bits_) << uint8_digits) | static_cast<uint16_t> (v);
             // `vv` holds `cntBits_ + 8` bits information.
             // cntBits_ + 8 < 10 -> cntBits_ < 2
             if (cntBits_ < 2) {
-                auto remain = (cntBits_ + bitsIn) - detail::symbolBits;
+                auto remain = (cntBits_ + uint8_digits) - detail::symbolBits;
                 *sink_++    = detail::encode (vv >> remain);
                 cntBits_    = remain;
                 bits_       = vv & detail::mask (remain);
             }
             else {
-                auto remain = (cntBits_ + bitsIn) - (2u * detail::symbolBits);
+                auto remain = (cntBits_ + uint8_digits) - (2u * detail::symbolBits);
                 *sink_++    = detail::encode (vv >> (detail::symbolBits + remain));
                 *sink_++    = detail::encode (vv >> remain);
                 cntBits_    = remain;
@@ -190,18 +190,18 @@ namespace ClockworkBase32 {
             if (! v) {
                 return false;
             }
-            auto constexpr bits = std::numeric_limits<uint8_t>::digits;
+            auto constexpr uint8_digits = std::numeric_limits<uint8_t>::digits;
 
             uint16_t vv = static_cast<uint16_t> (v.value () & detail::mask (detail::symbolBits))
                           | (static_cast<uint16_t> (bits_) << detail::symbolBits);
             auto nBits = cntBits_ + detail::symbolBits;
-            if (nBits < bits) {
+            if (nBits < uint8_digits) {
                 cntBits_ += detail::symbolBits;
                 bits_ = static_cast<uint8_t> (vv);
             }
             else {
-                *sink_++ = static_cast<uint8_t> (vv >> (nBits - bits));
-                cntBits_ = nBits - bits;
+                *sink_++ = static_cast<uint8_t> (vv >> (nBits - uint8_digits));
+                cntBits_ = nBits - uint8_digits;
                 bits_    = static_cast<uint8_t> (vv & detail::mask (cntBits_));
             }
             return true;
